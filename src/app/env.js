@@ -29,6 +29,13 @@
   }
 
   function parseArgument(argument) {
+    if (argument && typeof argument === "object") {
+      const result = {};
+      Object.keys(argument).forEach(function copyArgument(key) {
+        result[key] = argument[key];
+      });
+      return result;
+    }
     const result = {};
     String(argument || "").replace(/^["']|["']$/g, "").split("&")
       .forEach(function eachPair(pair) {
@@ -144,9 +151,9 @@
   }
 
   function loadConfig(core) {
-    let argument = "";
+    let argument = null;
     try {
-      argument = typeof $argument === "string" ? $argument : "";
+      argument = typeof $argument !== "undefined" ? $argument : null;
     } catch (_) {}
     const merged = Object.assign(
       {},
@@ -233,6 +240,25 @@
     return writeStore("", SAMPLE_KEY);
   }
 
+  function log(scope, message) {
+    try {
+      if (typeof console !== "undefined" &&
+          console && typeof console.log === "function") {
+        console.log(
+          "[BiliAccelerator][" + String(scope || "app") + "] " +
+          String(message || "")
+        );
+      }
+    } catch (_) {}
+  }
+
+  function logError(scope, error) {
+    const name = error && typeof error.name === "string"
+      ? error.name
+      : "Error";
+    log(scope, "failed open (" + name + ")");
+  }
+
   function rewriteAuthority(headers, targetHost) {
     const next = {};
     let sawHost = false;
@@ -263,6 +289,8 @@
     saveProbeSample,
     loadProbeSample,
     clearProbeSample,
+    log,
+    logError,
     rewriteAuthority
   };
 })(

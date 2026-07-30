@@ -24,6 +24,13 @@
     }
   }
 
+  function describeSamples(samples) {
+    return samples.map(function describe(sample) {
+      return sample.host + "=" +
+        (sample.ok ? String(sample.ttfb) + "ms" : "failed");
+    }).join(", ");
+  }
+
   function swapHost(value, host) {
     try {
       const url = new URL(value);
@@ -78,13 +85,21 @@
   try {
     const config = env.loadConfig(core);
     if (!config.enabled || config.mode === "off" ||
-        config.selection !== "auto" || env.loadRanking()) {
+        config.selection !== "auto") {
+      finish();
+      return;
+    }
+
+    const cached = env.loadRanking();
+    if (cached) {
+      env.log("rank", "skipped: cached winner=" + cached.ranking[0]);
       finish();
       return;
     }
 
     const sample = env.loadProbeSample();
     if (!sample) {
+      env.log("rank", "skipped: no valid playback sample");
       finish();
       return;
     }
@@ -100,12 +115,18 @@
     }).slice(0, MAX_CANDIDATES);
 
     if (!hosts.length) {
+      env.log("rank", "skipped: no candidate hosts");
       finish();
       return;
     }
 
     const samples = [];
+    env.log("rank", "probing " + hosts.length + " candidate(s)");
     overallTimer = setTimeout(function onOverallTimeout() {
+      env.log(
+        "rank",
+        "timed out: completed " + samples.length + "/" + hosts.length
+      );
       env.clearProbeSample();
       finish();
     }, OVERALL_TIMEOUT_MS);
@@ -126,12 +147,19 @@
         const ranking = core.rankHosts(healthy);
         if (ranking.length) {
           env.saveRanking(ranking, samples);
+          env.log(
+            "rank",
+            describeSamples(samples) + "; winner=" + ranking[0]
+          );
+        } else {
+          env.log("rank", describeSamples(samples) + "; no healthy candidate");
         }
         env.clearProbeSample();
         finish();
       });
     });
-  } catch (_) {
+  } catch (error) {
+    env.logError("rank", error);
     finish();
   }
 })(

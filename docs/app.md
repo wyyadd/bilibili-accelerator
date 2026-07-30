@@ -118,6 +118,20 @@ Loon 在插件设置中修改这些值。Surge 在模块参数中修改它们。
 明显的 PCDN/MCDN 和慢镜像。`/live-bvc/` 媒体请求始终不会被替换到
 VOD UPOS；直播优化只通过播放响应中的 `url_info` 过滤完成。
 
+## 日志
+
+脚本在 Loon/Surge 的脚本日志中使用 `[BiliAccelerator]` 前缀输出必要信息：
+
+```text
+[BiliAccelerator][request] 1.2.3.4:4483 -> upos-sz-mirrorcos.bilivideo.com (pcdn-host)
+[BiliAccelerator][response] rewrites=1 backups=updated live-filtered=0 sample=saved
+[BiliAccelerator][rank] upos-sz-mirrorcos.bilivideo.com=83ms, upos-sz-mirrorali.bilivideo.com=126ms; winner=upos-sz-mirrorcos.bilivideo.com
+```
+
+只有实际请求改写、播放响应处理、Rank 状态和 fail-open 异常会记录。请求日志
+只包含主机名和改写原因；响应日志只包含计数；Rank 日志只包含候选主机、
+耗时和结果。完整媒体 URL、查询参数、Cookie 和持久化的签名样本不会输出。
+
 ## 安全边界
 
 模块仅对列出的 Bilibili API、媒体 CDN 和已知 PCDN 域名启用 MITM。

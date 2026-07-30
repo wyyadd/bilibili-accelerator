@@ -1,19 +1,19 @@
-#!name = Bilibili Accelerator Core
+#!name = Bilibili Accelerator
 #!desc = Rewrite slow Bilibili PCDN/MCDN media URLs and add official CDN fallbacks.
-#!author = realzza
+#!author = wyyadd
 #!homepage = https://github.com/wyyadd/bilibili-accelerator
 #!version = __VERSION__
-#!arguments = enabled:"true",mode:"bad-only",selection:"auto",pcdnHost:"upos-sz-mirrorcos.bilivideo.com",mcdnStrategy:"proxy-all",rewriteAkamai:"false",portHeuristic:"true"
-#!arguments-desc = enabled: Enable rewriting.\nmode: bad-only, force, or off.\nselection: auto rank or fixed host.\npcdnHost: Preferred official UPOS host in fixed mode.\nmcdnStrategy: proxy-all, proxy-v1, or replace.\nrewriteAkamai: Rewrite Akamai media URLs.\nportHeuristic: Treat non-standard ports as PCDN.
+#!arguments = mode:"bad-only"
+#!arguments-desc = mode: bad-only, force, or off.
 
 [General]
 force-http-engine-hosts = %APPEND% *.bilivideo.com:0, *.bilivideo.cn:0, *.bilivideo.net:0, *.szbdyd.com:0, *.mountaintoys.cn:0, *.nexusedgeio.com:0, *.ahdohpiechei.com:0, *:4480, *:4483, *:8000, *:8082, *:9102
 
 [Script]
-Bilibili Accelerator media request = type=http-request, pattern=^https?:\/\/[^\/]*(?:bilivideo\.(?:com|cn|net)|akamaized\.net|szbdyd\.com|mountaintoys\.cn|nexusedgeio\.com|ahdohpiechei\.com|(?:\d{1,3}\.){3}\d{1,3})(?::\d+)?\/, script-path=https://wyyadd.github.io/bilibili-accelerator/app/bilibili-accelerator.request.js, argument="enabled={{{enabled}}}&mode={{{mode}}}&selection={{{selection}}}&pcdnHost={{{pcdnHost}}}&mcdnStrategy={{{mcdnStrategy}}}&rewriteAkamai={{{rewriteAkamai}}}&portHeuristic={{{portHeuristic}}}"
-Bilibili Accelerator playurl response = type=http-response, pattern=^https?:\/\/api\.bilibili\.com\/(?:x\/player\/(?:wbi\/)?playurl|pgc\/player\/(?:web|api)\/(?:v2\/)?playurl), requires-body=true, max-size=1048576, script-path=https://wyyadd.github.io/bilibili-accelerator/app/bilibili-accelerator.response.js, argument="enabled={{{enabled}}}&mode={{{mode}}}&selection={{{selection}}}&pcdnHost={{{pcdnHost}}}&mcdnStrategy={{{mcdnStrategy}}}&rewriteAkamai={{{rewriteAkamai}}}&portHeuristic={{{portHeuristic}}}"
-Bilibili Accelerator live response = type=http-response, pattern=^https?:\/\/api\.live\.bilibili\.com\/xlive\/.*getRoomPlayInfo, requires-body=true, max-size=1048576, script-path=https://wyyadd.github.io/bilibili-accelerator/app/bilibili-accelerator.response.js, argument="enabled={{{enabled}}}&mode={{{mode}}}&selection={{{selection}}}&pcdnHost={{{pcdnHost}}}&mcdnStrategy={{{mcdnStrategy}}}&rewriteAkamai={{{rewriteAkamai}}}&portHeuristic={{{portHeuristic}}}"
-Bilibili Accelerator CDN rank = type=cron, cronexp="*/10 * * * *", timeout=10, script-path=https://wyyadd.github.io/bilibili-accelerator/app/bilibili-accelerator.rank.js, argument="enabled={{{enabled}}}&mode={{{mode}}}&selection={{{selection}}}&pcdnHost={{{pcdnHost}}}"
+Bilibili Accelerator media request = type=http-request, pattern=^https?:\/\/[^\/]*(?:bilivideo\.(?:com|cn|net)|akamaized\.net|szbdyd\.com|mountaintoys\.cn|nexusedgeio\.com|ahdohpiechei\.com|(?:\d{1,3}\.){3}\d{1,3})(?::\d+)?\/, script-path=https://wyyadd.github.io/bilibili-accelerator/app/bilibili-accelerator.request.js, argument="mode={{{mode}}}"
+Bilibili Accelerator playurl response = type=http-response, pattern=^https?:\/\/api\.bilibili\.com\/(?:x\/player\/(?:wbi\/)?playurl|pgc\/player\/(?:web|api)\/(?:v2\/)?playurl), requires-body=true, max-size=1048576, script-path=https://wyyadd.github.io/bilibili-accelerator/app/bilibili-accelerator.response.js, argument="mode={{{mode}}}"
+Bilibili Accelerator live response = type=http-response, pattern=^https?:\/\/api\.live\.bilibili\.com\/xlive\/.*getRoomPlayInfo, requires-body=true, max-size=1048576, script-path=https://wyyadd.github.io/bilibili-accelerator/app/bilibili-accelerator.response.js, argument="mode={{{mode}}}"
+Bilibili Accelerator CDN rank = type=cron, cronexp="*/10 * * * *", timeout=10, script-path=https://wyyadd.github.io/bilibili-accelerator/app/bilibili-accelerator.rank.js, argument="mode={{{mode}}}"
 
 [MITM]
 hostname = %APPEND% api.bilibili.com, api.live.bilibili.com, *.bilivideo.com:0, *.bilivideo.cn:0, *.bilivideo.net:0, upos-*-mirrorakam.akamaized.net:0, *.szbdyd.com:0, *.mountaintoys.cn:0, *.nexusedgeio.com:0, *.ahdohpiechei.com:0

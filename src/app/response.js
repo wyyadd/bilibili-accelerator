@@ -25,24 +25,36 @@
     const payload = JSON.parse($response.body);
     const tracker = { changed: false, rewrites: [] };
     const sampleUrl = sample.findMediaUrl(payload, config);
+    let sampleSaved = false;
 
     if (config.enabled && config.mode !== "off" &&
         config.selection === "auto" && sampleUrl) {
-      env.saveProbeSample(sampleUrl);
+      sampleSaved = env.saveProbeSample(sampleUrl);
     }
 
     core.rewriteObject(payload, config, tracker);
     const backups = backup.enrichBackups(payload, config);
     const live = core.filterLiveUrlInfo(payload, config);
 
+    if (tracker.changed || backups.changed || live.changed || sampleSaved) {
+      env.log(
+        "response",
+        "rewrites=" + tracker.rewrites.length +
+        " backups=" + (backups.changed ? "updated" : "unchanged") +
+        " live-filtered=" + live.rewrites.length +
+        " sample=" + (sampleSaved ? "saved" : "unchanged")
+      );
+    }
+
     if (!tracker.changed && !backups.changed && !live.changed) {
       finish({});
       return;
     }
     finish({ body: JSON.stringify(payload) });
-  } catch (_) {
+  } catch (error) {
     // Preserve the original response on malformed, oversized, compressed, or
     // otherwise unsupported bodies.
+    env.logError("response", error);
     finish({});
   }
 })(

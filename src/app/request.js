@@ -29,13 +29,19 @@
       finish({});
       return;
     }
+    const sourceHost = core.hostOf($request.url) || "unknown";
+    env.log(
+      "request",
+      sourceHost + " -> " + targetHost + " (" + detail.reason + ")"
+    );
     finish({
       url: detail.url,
       headers: env.rewriteAuthority($request.headers || {}, targetHost)
     });
-  } catch (_) {
+  } catch (error) {
     // Network adapters must always fail open: a classifier or environment
     // mismatch should never turn into a broken media request.
+    env.logError("request", error);
     finish({});
   }
 })(

@@ -43,9 +43,15 @@ function runAdapter(entrySource, globals) {
 }
 
 test("request adapter rewrites URL and authority header", () => {
+  const logs = [];
   const result = runAdapter(requestSource, {
     $argument:
       "pcdnHost=upos-sz-mirrorali.bilivideo.com&mode=bad-only",
+    console: {
+      log(message) {
+        logs.push(message);
+      }
+    },
     $request: {
       url: "https://1.2.3.4:4483/upgcxcode/00/01/video.m4s?deadline=1",
       headers: {
@@ -58,6 +64,23 @@ test("request adapter rewrites URL and authority header", () => {
   assert.equal(new URL(result.url).hostname, "upos-sz-mirrorali.bilivideo.com");
   assert.equal(result.headers.Host, "upos-sz-mirrorali.bilivideo.com");
   assert.equal(result.headers["User-Agent"], "test");
+  assert.deepEqual(logs, [
+    "[BiliAccelerator][request] 1.2.3.4:4483 -> " +
+      "upos-sz-mirrorali.bilivideo.com (pcdn-host)"
+  ]);
+  assert.equal(logs.join("\n").includes("deadline"), false);
+});
+
+test("request adapter accepts Loon object arguments", () => {
+  const result = runAdapter(requestSource, {
+    $argument: { mode: "off" },
+    $request: {
+      url: "https://1.2.3.4:4483/upgcxcode/00/01/video.m4s?deadline=1",
+      headers: {}
+    }
+  });
+
+  assert.deepEqual({ ...result }, {});
 });
 
 test("request adapter fails open for unsupported URLs", () => {
@@ -114,6 +137,7 @@ test("response adapter rewrites playback JSON and adds backups", () => {
 
 test("response adapter stores a short-lived signed sample without probing", () => {
   const store = {};
+  const logs = [];
   const sample =
     "https://upos-sz-mirrorcos.bilivideo.com/upgcxcode/00/01/video.m4s?deadline=9999999999";
   let probes = 0;
@@ -132,6 +156,11 @@ test("response adapter stores a short-lived signed sample without probing", () =
         probes += 1;
       }
     },
+    console: {
+      log(message) {
+        logs.push(message);
+      }
+    },
     $response: {
       body: JSON.stringify({
         data: { dash: { video: [{ baseUrl: sample }] } }
@@ -144,6 +173,10 @@ test("response adapter stores a short-lived signed sample without probing", () =
   assert.equal(saved.url, sample);
   assert.ok(saved.expiresAt > saved.at);
   assert.equal(typeof result.body, "string");
+  assert.ok(logs.some((line) =>
+    line.startsWith("[BiliAccelerator][response] ")));
+  assert.equal(logs.join("\n").includes(sample), false);
+  assert.equal(logs.join("\n").includes("deadline"), false);
 });
 
 test("response adapter filters live PCDN hosts", () => {
@@ -178,6 +211,7 @@ test("response adapter filters live PCDN hosts", () => {
 test("rank adapter probes candidates and persists fastest healthy host", () => {
   const first = "upos-sz-mirrorcos.bilivideo.com";
   const fastest = "upos-sz-mirrorali.bilivideo.com";
+  const logs = [];
   const store = {
     "biliAccelerator.proxy.sample.v1": JSON.stringify({
       url:
@@ -196,6 +230,11 @@ test("rank adapter probes candidates and persists fastest healthy host", () => {
   const result = runAdapter(rankSource, {
     Date: FakeDate,
     $argument: `selection=auto&candidatePool=${first}|${fastest}`,
+    console: {
+      log(message) {
+        logs.push(message);
+      }
+    },
     $persistentStore: {
       read(key) {
         return store[key] || null;
@@ -218,6 +257,12 @@ test("rank adapter probes candidates and persists fastest healthy host", () => {
   assert.deepEqual({ ...result }, {});
   assert.deepEqual(cached.ranking, [fastest, first]);
   assert.equal(store["biliAccelerator.proxy.sample.v1"], "");
+  assert.ok(logs.includes("[BiliAccelerator][rank] probing 2 candidate(s)"));
+  assert.ok(logs.some((line) =>
+    line.includes("winner=" + fastest) &&
+    line.includes(first + "=40ms") &&
+    line.includes(fastest + "=10ms")));
+  assert.equal(logs.join("\n").includes("deadline"), false);
 });
 
 test("request adapter applies the cached automatic ranking", () => {
