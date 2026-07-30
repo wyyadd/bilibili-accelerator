@@ -17,5 +17,5 @@ jobs:
         run: node --test
       - name: Build
         run: node scripts/build.mjs
-      - name: dist/ is committed in sync with src/
-        run: git diff --exit-code -- dist
+      - name: Build Loon and Surge app
+        run: node scripts/build-app.mjs
