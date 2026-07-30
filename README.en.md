@@ -1,3 +1,7 @@
+# Bilibili APP Accelerator
+support loon and surge  
+read this [doc](./docs/app.md)
+
 # Bilibili Accelerator
 
 [中文](./README.md) · [Greasy Fork](https://greasyfork.org/en/scripts/582026-bilibili-accelerator) · v0.3.0
